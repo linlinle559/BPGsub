@@ -1,55 +1,4 @@
-async function getNextNode(env) {
-  const fallbackNode = { 
-      host: 'your-fallback-host.com', // <-- 在这里设置备用host
-      uuid: 'your-fallback-uuid-0000-0000-0000-000000000000' // <-- 在这里设置备用uuid
-  };
 
-  // 1. 优先从 KV 读取 (轮询模式)
-  if (env.KV) {
-      const nodeListValue = await env.KV.get('NODE_CONFIG_LIST');
-      if (nodeListValue) {
-          try {
-              const nodes = JSON.parse(nodeListValue);
-              if (Array.isArray(nodes) && nodes.length > 0) {
-                  let currentIndex = await env.KV.get('node_index');
-                  currentIndex = currentIndex ? parseInt(currentIndex) : 0;
-                  if (currentIndex >= nodes.length) {
-                      currentIndex = 0;
-                  }
-                  const nextNode = nodes[currentIndex];
-                  await env.KV.put('node_index', (currentIndex + 1).toString());
-                  if (nextNode && nextNode.host && nextNode.uuid) {
-                      console.log("获取节点来源: KV");
-                      return nextNode; // 成功从 KV 获取
-                  }
-              }
-          } catch (e) {
-              console.error("解析 NODE_CONFIG_LIST 失败:", e);
-          }
-      }
-  }
-
-  // 2. 如果 KV 失败，则检查环境变量 (混合模式)
-  if (env.HOST || env.UUID) {
-      console.log("获取节点来源: 环境变量 + 备用值组合");
-      
-      // 如果 env.HOST 存在，则使用它；否则，使用备用 host
-      const hostValue = env.HOST ? await 整理(env.HOST) : [fallbackNode.host];
-      const host = hostValue[Math.floor(Math.random() * hostValue.length)];
-      
-      // 如果 env.UUID 存在，则使用它；否则，使用备用 uuid
-      const uuid = env.UUID || fallbackNode.uuid;
-
-      return {
-          host: host,
-          uuid: uuid 
-      };
-  }
-
-  // 3. 如果以上都没有，返回完全写死的备用值
-  console.log("获取节点来源: 代码写死备用值");
-  return fallbackNode;
-}
 let 快速订阅访问入口 = ['PStSUB'];
 let addresses = [
 'fast-10010.asuscomm.com:443#免费订阅谨防受骗',
@@ -105,7 +54,59 @@ if (!api || api.length === 0) return [];
 
 let newapi = "";
 
-// 创建一个AbortController对象，用于控制fetch请求的取消
+async function getNextNode(env) {
+  const fallbackNode = { 
+      host: 'your-fallback-host.com', // <-- 在这里设置备用host
+      uuid: 'your-fallback-uuid-0000-0000-0000-000000000000' // <-- 在这里设置备用uuid
+  };
+
+  // 1. 优先从 KV 读取 (轮询模式)
+  if (env.KV) {
+      const nodeListValue = await env.KV.get('NODE_CONFIG_LIST');
+      if (nodeListValue) {
+          try {
+              const nodes = JSON.parse(nodeListValue);
+              if (Array.isArray(nodes) && nodes.length > 0) {
+                  let currentIndex = await env.KV.get('node_index');
+                  currentIndex = currentIndex ? parseInt(currentIndex) : 0;
+                  if (currentIndex >= nodes.length) {
+                      currentIndex = 0;
+                  }
+                  const nextNode = nodes[currentIndex];
+                  await env.KV.put('node_index', (currentIndex + 1).toString());
+                  if (nextNode && nextNode.host && nextNode.uuid) {
+                      console.log("获取节点来源: KV");
+                      return nextNode; // 成功从 KV 获取
+                  }
+              }
+          } catch (e) {
+              console.error("解析 NODE_CONFIG_LIST 失败:", e);
+          }
+      }
+  }
+
+  // 2. 如果 KV 失败，则检查环境变量 (混合模式)
+  if (env.HOST || env.UUID) {
+      console.log("获取节点来源: 环境变量 + 备用值组合");
+      
+      // 如果 env.HOST 存在，则使用它；否则，使用备用 host
+      const hostValue = env.HOST ? await 整理(env.HOST) : [fallbackNode.host];
+      const host = hostValue[Math.floor(Math.random() * hostValue.length)];
+      
+      // 如果 env.UUID 存在，则使用它；否则，使用备用 uuid
+      const uuid = env.UUID || fallbackNode.uuid;
+
+      return {
+          host: host,
+          uuid: uuid 
+      };
+  }
+
+  // 3. 如果以上都没有，返回完全写死的备用值
+  console.log("获取节点来源: 代码写死备用值");
+  return fallbackNode;
+}
+  // 创建一个AbortController对象，用于控制fetch请求的取消
 const controller = new AbortController();
 
 const timeout = setTimeout(() => {
@@ -1606,3 +1607,4 @@ return new Response(HTML, {
   },
 });
 }
+
